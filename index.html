@@ -20,27 +20,21 @@
         function JobMarketIntelligence() {
             const [jobTitle, setJobTitle] = useState('');
             const [location, setLocation] = useState('');
+            const [industry, setIndustry] = useState('');
             const [loading, setLoading] = useState(false);
             const [report, setReport] = useState(null);
             const [error, setError] = useState('');
 
-            const industryData = {
-                pixelogic: {
-                    name: 'Pixelogic Media',
-                    locations: 7,
-                    focus: 'Distribution services and technology solutions for entertainment industry'
-                },
-                deluxe: {
-                    name: 'Deluxe Entertainment',
-                    employees: '3,500+',
-                    focus: 'Media and entertainment services for film, video, and online content'
-                },
-                iyuno: {
-                    name: 'Iyuno-SDI',
-                    offices: '67 offices in 34 countries',
-                    focus: 'Leading provider of dubbing, subtitling, translation, and media services'
-                }
-            };
+            const industryOptions = [
+                'Technology & SaaS',
+                'Media & Entertainment',
+                'Financial Services & FinTech',
+                'E-commerce & Retail',
+                'Healthcare & Biotech',
+                'Professional Services',
+                'Manufacturing & Industrial',
+                'Education & EdTech'
+            ];
 
             const generateReport = async () => {
                 if (!jobTitle.trim()) {
@@ -53,6 +47,8 @@
                 setReport(null);
 
                 try {
+                    const industryContext = industry ? `Focus on the ${industry} industry.` : '';
+                    
                     const response = await fetch('https://api.anthropic.com/v1/messages', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -61,7 +57,7 @@
                             max_tokens: 4000,
                             messages: [{
                                 role: 'user',
-                                content: `Generate a job market intelligence report for: "${jobTitle}"${location ? ` in ${location}` : ''}. Return ONLY valid JSON: {"role":"${jobTitle}","location":"${location || 'Global'}","demandLevel":"High","salaryRange":{"min":80000,"max":150000,"currency":"USD","note":"Based on market data"},"topSkills":[{"skill":"Example","demand":"High"}],"competitiveInsights":{"averageTimeToHire":"45 days","competitionLevel":"High","talentAvailability":"Moderate"},"emergingTrends":["Trend 1"],"keyRecommendations":["Rec 1"]}`
+                                content: `Generate a comprehensive job market intelligence report for: "${jobTitle}"${location ? ` in ${location}` : ''}. ${industryContext} Return ONLY valid JSON with this structure: {"role":"${jobTitle}","location":"${location || 'Global'}","industry":"${industry || 'General'}","demandLevel":"High|Medium|Low","salaryRange":{"min":0,"max":0,"currency":"USD|CAD|EUR","note":"context"},"topSkills":[{"skill":"name","demand":"Critical|High|Medium"}],"industryDemand":[{"industry":"name","demand":"25%"}],"competitiveInsights":{"averageTimeToHire":"X days","competitionLevel":"High|Medium|Low","talentAvailability":"Scarce|Moderate|Abundant"},"emergingTrends":["trend"],"keyRecommendations":["recommendation"]}`
                             }],
                             tools: [{ type: 'web_search_20250305', name: 'web_search' }]
                         })
@@ -79,6 +75,50 @@
                 }
             };
 
+            const downloadReport = () => {
+                if (!report) return;
+                const reportText = `JOB MARKET INTELLIGENCE REPORT
+Generated: ${new Date().toLocaleDateString()}
+
+Role: ${report.role}
+Location: ${report.location}
+Industry: ${report.industry || 'General'}
+Market Demand: ${report.demandLevel}
+
+SALARY INSIGHTS
+Range: ${report.salaryRange.currency} $${report.salaryRange.min.toLocaleString()} - $${report.salaryRange.max.toLocaleString()}
+${report.salaryRange.note}
+
+TOP IN-DEMAND SKILLS
+${report.topSkills ? report.topSkills.map((s, i) => `${i + 1}. ${s.skill} (${s.demand} demand)`).join('\n') : ''}
+
+INDUSTRY DEMAND
+${report.industryDemand ? report.industryDemand.map((ind, i) => `${i + 1}. ${ind.industry}: ${ind.demand}`).join('\n') : ''}
+
+COMPETITIVE LANDSCAPE
+- Time to Hire: ${report.competitiveInsights.averageTimeToHire}
+- Competition Level: ${report.competitiveInsights.competitionLevel}
+- Talent Availability: ${report.competitiveInsights.talentAvailability}
+
+EMERGING TRENDS
+${report.emergingTrends ? report.emergingTrends.map((t, i) => `${i + 1}. ${t}`).join('\n') : ''}
+
+KEY RECOMMENDATIONS
+${report.keyRecommendations ? report.keyRecommendations.map((r, i) => `${i + 1}. ${r}`).join('\n') : ''}
+
+---
+Built by Dora Stancu | AI-Powered Market Intelligence
+https://dorast.github.io/job-market-intelligence/`;
+
+                const blob = new Blob([reportText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `market-intelligence-${jobTitle.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
             return React.createElement('div', { 
                 className: "min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-8" 
             },
@@ -89,28 +129,24 @@
                             className: "text-5xl font-bold mb-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent" 
                         }, '📊 Job Market Intelligence'),
                         React.createElement('p', { className: "text-gray-600 text-lg" }, 
-                            'AI-powered talent market analysis with competitive benchmarking'
+                            'AI-powered talent market analysis across industries'
+                        ),
+                        React.createElement('p', { className: "text-gray-500 text-sm mt-2" }, 
+                            'Real-time salary benchmarks • Skills demand • Competitive insights'
                         )
                     ),
 
-                    // Company Cards
-                    React.createElement('div', { className: "grid md:grid-cols-3 gap-4 mb-8" },
-                        Object.values(industryData).map((company, idx) =>
-                            React.createElement('div', { 
-                                key: idx, 
-                                className: "bg-white rounded-xl shadow-md p-5 border border-gray-100" 
-                            },
-                                React.createElement('h3', { className: "font-bold text-gray-800 mb-2" }, 
-                                    '🏢 ' + company.name
-                                ),
-                                React.createElement('p', { className: "text-xs text-gray-600 mb-2" }, 
-                                    company.focus
-                                ),
-                                React.createElement('div', { className: "text-xs text-gray-500" },
-                                    company.employees && React.createElement('div', null, `👥 ${company.employees}`),
-                                    company.offices && React.createElement('div', null, `📍 ${company.offices}`),
-                                    company.locations && React.createElement('div', null, `🌍 ${company.locations} global offices`)
-                                )
+                    // Industry Coverage Banner
+                    React.createElement('div', { className: "bg-white rounded-xl shadow-md p-6 mb-8 border border-gray-100" },
+                        React.createElement('h3', { className: "font-bold text-gray-800 mb-3 text-center" }, 
+                            '🌐 Industry Coverage'
+                        ),
+                        React.createElement('div', { className: "flex flex-wrap justify-center gap-2" },
+                            ['Tech & SaaS', 'Media & Entertainment', 'FinTech', 'E-commerce', 'Healthcare', 'Professional Services', 'Manufacturing', 'EdTech'].map((ind, idx) =>
+                                React.createElement('span', { 
+                                    key: idx, 
+                                    className: "px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium" 
+                                }, ind)
                             )
                         )
                     ),
@@ -126,23 +162,40 @@
                                     type: "text",
                                     value: jobTitle,
                                     onChange: (e) => setJobTitle(e.target.value),
-                                    placeholder: "e.g., Executive Talent Acquisition Partner",
+                                    placeholder: "e.g., Talent Acquisition Manager, Product Manager, Data Analyst",
                                     className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none",
                                     onKeyPress: (e) => e.key === 'Enter' && generateReport()
                                 })
                             ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-semibold text-gray-700 mb-2" }, 
-                                    '📍 Location (Optional)'
+                            React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: "block text-sm font-semibold text-gray-700 mb-2" }, 
+                                        '📍 Location (Optional)'
+                                    ),
+                                    React.createElement('input', {
+                                        type: "text",
+                                        value: location,
+                                        onChange: (e) => setLocation(e.target.value),
+                                        placeholder: "e.g., Toronto, APAC, Remote",
+                                        className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none",
+                                        onKeyPress: (e) => e.key === 'Enter' && generateReport()
+                                    })
                                 ),
-                                React.createElement('input', {
-                                    type: "text",
-                                    value: location,
-                                    onChange: (e) => setLocation(e.target.value),
-                                    placeholder: "e.g., Toronto, Canada",
-                                    className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none",
-                                    onKeyPress: (e) => e.key === 'Enter' && generateReport()
-                                })
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: "block text-sm font-semibold text-gray-700 mb-2" }, 
+                                        '🏢 Industry (Optional)'
+                                    ),
+                                    React.createElement('select', {
+                                        value: industry,
+                                        onChange: (e) => setIndustry(e.target.value),
+                                        className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none bg-white"
+                                    },
+                                        React.createElement('option', { value: "" }, "All Industries"),
+                                        industryOptions.map((ind, idx) =>
+                                            React.createElement('option', { key: idx, value: ind }, ind)
+                                        )
+                                    )
+                                )
                             ),
                             React.createElement('button', {
                                 onClick: generateReport,
@@ -156,8 +209,17 @@
                     // Results
                     report && React.createElement('div', { className: "space-y-6" },
                         React.createElement('div', { className: "bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white" },
-                            React.createElement('h2', { className: "text-3xl font-bold mb-2" }, report.role),
-                            React.createElement('p', { className: "text-indigo-100 mb-4" }, '📍 ' + report.location),
+                            React.createElement('div', { className: "flex justify-between items-start mb-4" },
+                                React.createElement('div', null,
+                                    React.createElement('h2', { className: "text-3xl font-bold mb-2" }, report.role),
+                                    React.createElement('p', { className: "text-indigo-100 mb-1" }, '📍 ' + report.location),
+                                    report.industry && React.createElement('p', { className: "text-indigo-100 text-sm" }, '🏢 ' + report.industry)
+                                ),
+                                React.createElement('button', {
+                                    onClick: downloadReport,
+                                    className: "bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                                }, '💾 Export')
+                            ),
                             React.createElement('span', { className: "text-sm font-medium bg-white/20 px-4 py-2 rounded-full" },
                                 `Market Demand: ${report.demandLevel}`
                             )
@@ -175,24 +237,79 @@
                             )
                         ),
 
-                        React.createElement('div', { className: "bg-white rounded-2xl shadow-xl p-6 border border-gray-100" },
-                            React.createElement('h3', { className: "text-xl font-bold text-gray-800 mb-4" }, 
-                                '📈 Top Skills in Demand'
+                        React.createElement('div', { className: "grid md:grid-cols-2 gap-6" },
+                            // Top Skills
+                            React.createElement('div', { className: "bg-white rounded-2xl shadow-xl p-6 border border-gray-100" },
+                                React.createElement('h3', { className: "text-xl font-bold text-gray-800 mb-4" }, 
+                                    '📈 Top Skills in Demand'
+                                ),
+                                React.createElement('div', { className: "space-y-3" },
+                                    report.topSkills && report.topSkills.map((skill, idx) =>
+                                        React.createElement('div', { 
+                                            key: idx, 
+                                            className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg" 
+                                        },
+                                            React.createElement('span', { className: "font-medium text-gray-800" }, skill.skill),
+                                            React.createElement('span', { 
+                                                className: `text-sm px-3 py-1 rounded-full ${
+                                                    skill.demand === 'Critical' ? 'bg-red-100 text-red-700' :
+                                                    skill.demand === 'High' ? 'bg-orange-100 text-orange-700' :
+                                                    'bg-yellow-100 text-yellow-700'
+                                                }` 
+                                            }, skill.demand)
+                                        )
+                                    )
+                                )
                             ),
-                            React.createElement('div', { className: "space-y-3" },
-                                report.topSkills && report.topSkills.map((skill, idx) =>
-                                    React.createElement('div', { 
-                                        key: idx, 
-                                        className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg" 
-                                    },
-                                        React.createElement('span', { className: "font-medium text-gray-800" }, skill.skill),
-                                        React.createElement('span', { 
-                                            className: `text-sm px-3 py-1 rounded-full ${
-                                                skill.demand === 'Critical' ? 'bg-red-100 text-red-700' :
-                                                skill.demand === 'High' ? 'bg-orange-100 text-orange-700' :
-                                                'bg-yellow-100 text-yellow-700'
-                                            }` 
-                                        }, skill.demand)
+
+                            // Competitive Insights
+                            React.createElement('div', { className: "bg-white rounded-2xl shadow-xl p-6 border border-gray-100" },
+                                React.createElement('h3', { className: "text-xl font-bold text-gray-800 mb-4" }, 
+                                    '🎯 Competitive Landscape'
+                                ),
+                                React.createElement('div', { className: "space-y-3" },
+                                    React.createElement('div', { className: "p-3 bg-blue-50 rounded-lg" },
+                                        React.createElement('p', { className: "text-xs text-gray-600 mb-1" }, 'Avg. Time to Hire'),
+                                        React.createElement('p', { className: "text-lg font-bold text-gray-800" }, report.competitiveInsights.averageTimeToHire)
+                                    ),
+                                    React.createElement('div', { className: "p-3 bg-purple-50 rounded-lg" },
+                                        React.createElement('p', { className: "text-xs text-gray-600 mb-1" }, 'Competition Level'),
+                                        React.createElement('p', { className: "text-lg font-bold text-gray-800" }, report.competitiveInsights.competitionLevel)
+                                    ),
+                                    React.createElement('div', { className: "p-3 bg-amber-50 rounded-lg" },
+                                        React.createElement('p', { className: "text-xs text-gray-600 mb-1" }, 'Talent Availability'),
+                                        React.createElement('p', { className: "text-lg font-bold text-gray-800" }, report.competitiveInsights.talentAvailability)
+                                    )
+                                )
+                            )
+                        ),
+
+                        // Trends & Recommendations
+                        React.createElement('div', { className: "grid md:grid-cols-2 gap-6" },
+                            React.createElement('div', { className: "bg-white rounded-2xl shadow-xl p-6 border border-gray-100" },
+                                React.createElement('h3', { className: "text-xl font-bold text-gray-800 mb-4" }, '🔮 Emerging Trends'),
+                                React.createElement('div', { className: "space-y-3" },
+                                    report.emergingTrends && report.emergingTrends.map((trend, idx) =>
+                                        React.createElement('div', { key: idx, className: "flex gap-3 items-start" },
+                                            React.createElement('div', { className: "w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5" },
+                                                React.createElement('span', { className: "text-xs font-bold text-indigo-600" }, idx + 1)
+                                            ),
+                                            React.createElement('p', { className: "text-gray-700 text-sm" }, trend)
+                                        )
+                                    )
+                                )
+                            ),
+
+                            React.createElement('div', { className: "bg-white rounded-2xl shadow-xl p-6 border border-gray-100" },
+                                React.createElement('h3', { className: "text-xl font-bold text-gray-800 mb-4" }, '💡 Strategic Recommendations'),
+                                React.createElement('div', { className: "space-y-3" },
+                                    report.keyRecommendations && report.keyRecommendations.map((rec, idx) =>
+                                        React.createElement('div', { key: idx, className: "flex gap-3 items-start" },
+                                            React.createElement('div', { className: "w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5" },
+                                                React.createElement('span', { className: "text-xs font-bold text-green-600" }, idx + 1)
+                                            ),
+                                            React.createElement('p', { className: "text-gray-700 text-sm" }, rec)
+                                        )
                                     )
                                 )
                             )
@@ -201,12 +318,17 @@
 
                     // Footer
                     React.createElement('div', { className: "text-center mt-12 pb-8" },
-                        React.createElement('p', { className: "text-gray-500 text-sm" }, 
-                            'Powered by AI • Built by Dora Stancu'
+                        React.createElement('p', { className: "text-gray-500 text-sm mb-2" }, 
+                            'Powered by AI • Real-time Market Analysis • Built by Dora Stancu'
                         ),
-                        React.createElement('p', { className: "text-gray-400 text-xs mt-2" }, 
-                            'Competitive intelligence: Pixelogic • Deluxe • Iyuno-SDI'
-                        )
+                        React.createElement('p', { className: "text-gray-400 text-xs" }, 
+                            'Cross-industry intelligence across Tech, SaaS, Media, FinTech, and more'
+                        ),
+                        React.createElement('a', { 
+                            href: "https://github.com/dorast/job-market-intelligence",
+                            target: "_blank",
+                            className: "text-indigo-600 hover:text-indigo-700 text-xs mt-2 inline-block"
+                        }, '🔗 View on GitHub')
                     )
                 )
             );
