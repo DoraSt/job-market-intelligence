@@ -7,9 +7,6 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .icon { display: inline-block; width: 1.25rem; height: 1.25rem; }
-    </style>
 </head>
 <body>
     <div id="root"></div>
@@ -23,7 +20,6 @@
             const [industry, setIndustry] = useState('');
             const [loading, setLoading] = useState(false);
             const [report, setReport] = useState(null);
-            const [error, setError] = useState('');
 
             const industryOptions = [
                 'Technology & SaaS',
@@ -36,43 +32,178 @@
                 'Education & EdTech'
             ];
 
-            const generateReport = async () => {
+            // Sample data generator based on inputs
+            const generateReport = () => {
                 if (!jobTitle.trim()) {
-                    setError('Please enter a job title');
+                    alert('Please enter a job title');
                     return;
                 }
 
                 setLoading(true);
-                setError('');
                 setReport(null);
 
-                try {
-                    const industryContext = industry ? `Focus on the ${industry} industry.` : '';
-                    
-                    const response = await fetch('https://api.anthropic.com/v1/messages', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: 'claude-sonnet-4-20250514',
-                            max_tokens: 4000,
-                            messages: [{
-                                role: 'user',
-                                content: `Generate a comprehensive job market intelligence report for: "${jobTitle}"${location ? ` in ${location}` : ''}. ${industryContext} Return ONLY valid JSON with this structure: {"role":"${jobTitle}","location":"${location || 'Global'}","industry":"${industry || 'General'}","demandLevel":"High|Medium|Low","salaryRange":{"min":0,"max":0,"currency":"USD|CAD|EUR","note":"context"},"topSkills":[{"skill":"name","demand":"Critical|High|Medium"}],"industryDemand":[{"industry":"name","demand":"25%"}],"competitiveInsights":{"averageTimeToHire":"X days","competitionLevel":"High|Medium|Low","talentAvailability":"Scarce|Moderate|Abundant"},"emergingTrends":["trend"],"keyRecommendations":["recommendation"]}`
-                            }],
-                            tools: [{ type: 'web_search_20250305', name: 'web_search' }]
-                        })
-                    });
+                // Simulate API delay
+                setTimeout(() => {
+                    const sampleReport = {
+                        role: jobTitle,
+                        location: location || 'North America',
+                        industry: industry || 'Cross-Industry',
+                        demandLevel: 'High',
+                        salaryRange: getSalaryRange(jobTitle, location),
+                        topSkills: getTopSkills(jobTitle),
+                        industryDemand: getIndustryDemand(industry),
+                        competitiveInsights: {
+                            averageTimeToHire: '45-60 days',
+                            competitionLevel: 'High',
+                            talentAvailability: 'Moderate'
+                        },
+                        emergingTrends: getEmergingTrends(jobTitle, industry),
+                        keyRecommendations: getRecommendations(jobTitle)
+                    };
 
-                    const data = await response.json();
-                    const text = data.content.map(b => b.type === 'text' ? b.text : '').join('\n');
-                    const clean = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-                    setReport(JSON.parse(clean));
-                } catch (err) {
-                    console.error('Error:', err);
-                    setError('Failed to generate report. Please try again.');
-                } finally {
+                    setReport(sampleReport);
                     setLoading(false);
+                }, 1500);
+            };
+
+            const getSalaryRange = (title, loc) => {
+                const currency = loc?.toLowerCase().includes('canad') ? 'CAD' : 'USD';
+                let min = 80000;
+                let max = 150000;
+
+                if (title.toLowerCase().includes('director')) {
+                    min = 130000;
+                    max = 200000;
+                } else if (title.toLowerCase().includes('senior') || title.toLowerCase().includes('lead')) {
+                    min = 100000;
+                    max = 170000;
+                } else if (title.toLowerCase().includes('manager')) {
+                    min = 90000;
+                    max = 150000;
                 }
+
+                return {
+                    min,
+                    max,
+                    currency,
+                    note: `Based on current market data for ${loc || 'North America'}. Actual compensation may vary based on experience, company size, and specific requirements.`
+                };
+            };
+
+            const getTopSkills = (title) => {
+                const talentAcqSkills = [
+                    {skill: "Executive Search & Assessment", demand: "Critical"},
+                    {skill: "Stakeholder Management", demand: "Critical"},
+                    {skill: "Market Intelligence & Analytics", demand: "High"},
+                    {skill: "Passive Candidate Sourcing", demand: "High"},
+                    {skill: "ATS & Recruiting Technology", demand: "High"},
+                    {skill: "Employer Branding", demand: "Medium"}
+                ];
+
+                const productSkills = [
+                    {skill: "Product Strategy & Roadmapping", demand: "Critical"},
+                    {skill: "User Research & Analysis", demand: "Critical"},
+                    {skill: "Cross-Functional Collaboration", demand: "High"},
+                    {skill: "Data-Driven Decision Making", demand: "High"},
+                    {skill: "Agile/Scrum Methodologies", demand: "High"},
+                    {skill: "Stakeholder Communication", demand: "Medium"}
+                ];
+
+                const dataSkills = [
+                    {skill: "SQL & Database Management", demand: "Critical"},
+                    {skill: "Python/R Programming", demand: "Critical"},
+                    {skill: "Data Visualization (Tableau, PowerBI)", demand: "High"},
+                    {skill: "Statistical Analysis", demand: "High"},
+                    {skill: "Machine Learning Fundamentals", demand: "High"},
+                    {skill: "Business Intelligence", demand: "Medium"}
+                ];
+
+                if (title.toLowerCase().includes('talent') || title.toLowerCase().includes('recruit')) {
+                    return talentAcqSkills;
+                } else if (title.toLowerCase().includes('product')) {
+                    return productSkills;
+                } else if (title.toLowerCase().includes('data') || title.toLowerCase().includes('analyst')) {
+                    return dataSkills;
+                }
+
+                return [
+                    {skill: "Strategic Planning", demand: "Critical"},
+                    {skill: "Leadership & Team Management", demand: "Critical"},
+                    {skill: "Data Analysis", demand: "High"},
+                    {skill: "Project Management", demand: "High"},
+                    {skill: "Communication Skills", demand: "High"},
+                    {skill: "Industry Expertise", demand: "Medium"}
+                ];
+            };
+
+            const getIndustryDemand = (selectedIndustry) => {
+                if (selectedIndustry?.includes('Tech') || selectedIndustry?.includes('SaaS')) {
+                    return [
+                        {industry: "Enterprise SaaS", demand: "40%"},
+                        {industry: "FinTech", demand: "25%"},
+                        {industry: "HealthTech", demand: "15%"},
+                        {industry: "E-commerce Platforms", demand: "12%"},
+                        {industry: "Cybersecurity", demand: "8%"}
+                    ];
+                } else if (selectedIndustry?.includes('Financial')) {
+                    return [
+                        {industry: "Digital Banking", demand: "35%"},
+                        {industry: "Payments", demand: "28%"},
+                        {industry: "Wealth Management", demand: "18%"},
+                        {industry: "Insurance Tech", demand: "12%"},
+                        {industry: "Blockchain/Crypto", demand: "7%"}
+                    ];
+                }
+
+                return [
+                    {industry: "Technology & SaaS", demand: "35%"},
+                    {industry: "Financial Services", demand: "22%"},
+                    {industry: "Healthcare", demand: "18%"},
+                    {industry: "Professional Services", demand: "15%"},
+                    {industry: "E-commerce & Retail", demand: "10%"}
+                ];
+            };
+
+            const getEmergingTrends = (title, selectedIndustry) => {
+                const talentTrends = [
+                    "AI-powered sourcing tools becoming standard for candidate identification and engagement",
+                    "Shift toward skills-based hiring over traditional credentials and years of experience",
+                    "Remote-first talent strategies expanding geographic reach and diversity",
+                    "Emphasis on candidate experience and employer brand differentiation in competitive markets"
+                ];
+
+                const techTrends = [
+                    "AI and machine learning skills increasingly required across all technical roles",
+                    "Remote-first and hybrid work models now standard expectations for talent",
+                    "Growing emphasis on data literacy and analytical capabilities",
+                    "Cross-functional collaboration skills valued as highly as technical expertise"
+                ];
+
+                if (title.toLowerCase().includes('talent') || title.toLowerCase().includes('recruit')) {
+                    return talentTrends;
+                }
+
+                return techTrends;
+            };
+
+            const getRecommendations = (title) => {
+                if (title.toLowerCase().includes('talent') || title.toLowerCase().includes('recruit')) {
+                    return [
+                        "Build passive candidate pipelines 3-6 months before active hiring needs",
+                        "Invest in market intelligence tools and competitive salary benchmarking",
+                        "Emphasize employer brand and company mission in candidate outreach",
+                        "Offer flexible work arrangements as table stakes for top talent",
+                        "Develop relationships with candidates even when no immediate role exists"
+                    ];
+                }
+
+                return [
+                    "Develop specialized skills in emerging technologies relevant to the role",
+                    "Build portfolio of measurable business impact and results",
+                    "Network actively within target industries and maintain warm relationships",
+                    "Consider companies at different growth stages (Series A through enterprise) for diverse opportunities",
+                    "Emphasize adaptability and continuous learning in positioning"
+                ];
             };
 
             const downloadReport = () => {
@@ -82,7 +213,7 @@ Generated: ${new Date().toLocaleDateString()}
 
 Role: ${report.role}
 Location: ${report.location}
-Industry: ${report.industry || 'General'}
+Industry: ${report.industry}
 Market Demand: ${report.demandLevel}
 
 SALARY INSIGHTS
@@ -90,10 +221,10 @@ Range: ${report.salaryRange.currency} $${report.salaryRange.min.toLocaleString()
 ${report.salaryRange.note}
 
 TOP IN-DEMAND SKILLS
-${report.topSkills ? report.topSkills.map((s, i) => `${i + 1}. ${s.skill} (${s.demand} demand)`).join('\n') : ''}
+${report.topSkills.map((s, i) => `${i + 1}. ${s.skill} (${s.demand} demand)`).join('\n')}
 
 INDUSTRY DEMAND
-${report.industryDemand ? report.industryDemand.map((ind, i) => `${i + 1}. ${ind.industry}: ${ind.demand}`).join('\n') : ''}
+${report.industryDemand.map((ind, i) => `${i + 1}. ${ind.industry}: ${ind.demand}`).join('\n')}
 
 COMPETITIVE LANDSCAPE
 - Time to Hire: ${report.competitiveInsights.averageTimeToHire}
@@ -101,14 +232,16 @@ COMPETITIVE LANDSCAPE
 - Talent Availability: ${report.competitiveInsights.talentAvailability}
 
 EMERGING TRENDS
-${report.emergingTrends ? report.emergingTrends.map((t, i) => `${i + 1}. ${t}`).join('\n') : ''}
+${report.emergingTrends.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 
 KEY RECOMMENDATIONS
-${report.keyRecommendations ? report.keyRecommendations.map((r, i) => `${i + 1}. ${r}`).join('\n') : ''}
+${report.keyRecommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
 ---
-Built by Dora Stancu | AI-Powered Market Intelligence
-https://dorast.github.io/job-market-intelligence/`;
+Built by Dora Stancu | Market Intelligence Tool Prototype
+https://dorast.github.io/job-market-intelligence/
+
+Note: This is a demonstration using sample market data. Production version would integrate with live market intelligence APIs.`;
 
                 const blob = new Blob([reportText], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
@@ -128,11 +261,11 @@ https://dorast.github.io/job-market-intelligence/`;
                         React.createElement('h1', { 
                             className: "text-5xl font-bold mb-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent" 
                         }, '📊 Job Market Intelligence'),
-                        React.createElement('p', { className: "text-gray-600 text-lg" }, 
+                        React.createElement('p', { className: "text-gray-600 text-lg mb-2" }, 
                             'AI-powered talent market analysis across industries'
                         ),
-                        React.createElement('p', { className: "text-gray-500 text-sm mt-2" }, 
-                            'Real-time salary benchmarks • Skills demand • Competitive insights'
+                        React.createElement('p', { className: "text-sm text-indigo-600 font-medium" }, 
+                            '✨ Interactive Demo • Sample Market Data'
                         )
                     ),
 
@@ -176,7 +309,7 @@ https://dorast.github.io/job-market-intelligence/`;
                                         type: "text",
                                         value: location,
                                         onChange: (e) => setLocation(e.target.value),
-                                        placeholder: "e.g., Toronto, APAC, Remote",
+                                        placeholder: "e.g., Toronto, Canada, APAC",
                                         className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none",
                                         onKeyPress: (e) => e.key === 'Enter' && generateReport()
                                     })
@@ -201,9 +334,8 @@ https://dorast.github.io/job-market-intelligence/`;
                                 onClick: generateReport,
                                 disabled: loading,
                                 className: "w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            }, loading ? '⏳ Analyzing Market Data...' : '✨ Generate Intelligence Report')
-                        ),
-                        error && React.createElement('div', { className: "mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700" }, error)
+                            }, loading ? '⏳ Generating Report...' : '✨ Generate Market Intelligence Report')
+                        )
                     ),
 
                     // Results
@@ -233,7 +365,7 @@ https://dorast.github.io/job-market-intelligence/`;
                                 React.createElement('div', { className: "text-3xl font-bold text-gray-800 mb-2" },
                                     `${report.salaryRange.currency} $${report.salaryRange.min.toLocaleString()} - $${report.salaryRange.max.toLocaleString()}`
                                 ),
-                                React.createElement('p', { className: "text-gray-600" }, report.salaryRange.note)
+                                React.createElement('p', { className: "text-gray-600 text-sm" }, report.salaryRange.note)
                             )
                         ),
 
@@ -244,14 +376,14 @@ https://dorast.github.io/job-market-intelligence/`;
                                     '📈 Top Skills in Demand'
                                 ),
                                 React.createElement('div', { className: "space-y-3" },
-                                    report.topSkills && report.topSkills.map((skill, idx) =>
+                                    report.topSkills.map((skill, idx) =>
                                         React.createElement('div', { 
                                             key: idx, 
                                             className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg" 
                                         },
-                                            React.createElement('span', { className: "font-medium text-gray-800" }, skill.skill),
+                                            React.createElement('span', { className: "font-medium text-gray-800 text-sm" }, skill.skill),
                                             React.createElement('span', { 
-                                                className: `text-sm px-3 py-1 rounded-full ${
+                                                className: `text-xs px-3 py-1 rounded-full ${
                                                     skill.demand === 'Critical' ? 'bg-red-100 text-red-700' :
                                                     skill.demand === 'High' ? 'bg-orange-100 text-orange-700' :
                                                     'bg-yellow-100 text-yellow-700'
@@ -284,12 +416,35 @@ https://dorast.github.io/job-market-intelligence/`;
                             )
                         ),
 
+                        // Industry Demand
+                        React.createElement('div', { className: "bg-white rounded-2xl shadow-xl p-6 border border-gray-100" },
+                            React.createElement('h3', { className: "text-xl font-bold text-gray-800 mb-4" }, 
+                                '📊 Industry Hiring Demand'
+                            ),
+                            React.createElement('div', { className: "space-y-3" },
+                                report.industryDemand.map((ind, idx) =>
+                                    React.createElement('div', { key: idx, className: "space-y-2" },
+                                        React.createElement('div', { className: "flex justify-between text-sm" },
+                                            React.createElement('span', { className: "font-medium text-gray-700" }, ind.industry),
+                                            React.createElement('span', { className: "text-indigo-600 font-semibold" }, ind.demand)
+                                        ),
+                                        React.createElement('div', { className: "h-2 bg-gray-100 rounded-full overflow-hidden" },
+                                            React.createElement('div', { 
+                                                className: "h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all",
+                                                style: { width: ind.demand }
+                                            })
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+
                         // Trends & Recommendations
                         React.createElement('div', { className: "grid md:grid-cols-2 gap-6" },
                             React.createElement('div', { className: "bg-white rounded-2xl shadow-xl p-6 border border-gray-100" },
                                 React.createElement('h3', { className: "text-xl font-bold text-gray-800 mb-4" }, '🔮 Emerging Trends'),
                                 React.createElement('div', { className: "space-y-3" },
-                                    report.emergingTrends && report.emergingTrends.map((trend, idx) =>
+                                    report.emergingTrends.map((trend, idx) =>
                                         React.createElement('div', { key: idx, className: "flex gap-3 items-start" },
                                             React.createElement('div', { className: "w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5" },
                                                 React.createElement('span', { className: "text-xs font-bold text-indigo-600" }, idx + 1)
@@ -303,7 +458,7 @@ https://dorast.github.io/job-market-intelligence/`;
                             React.createElement('div', { className: "bg-white rounded-2xl shadow-xl p-6 border border-gray-100" },
                                 React.createElement('h3', { className: "text-xl font-bold text-gray-800 mb-4" }, '💡 Strategic Recommendations'),
                                 React.createElement('div', { className: "space-y-3" },
-                                    report.keyRecommendations && report.keyRecommendations.map((rec, idx) =>
+                                    report.keyRecommendations.map((rec, idx) =>
                                         React.createElement('div', { key: idx, className: "flex gap-3 items-start" },
                                             React.createElement('div', { className: "w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5" },
                                                 React.createElement('span', { className: "text-xs font-bold text-green-600" }, idx + 1)
@@ -319,16 +474,16 @@ https://dorast.github.io/job-market-intelligence/`;
                     // Footer
                     React.createElement('div', { className: "text-center mt-12 pb-8" },
                         React.createElement('p', { className: "text-gray-500 text-sm mb-2" }, 
-                            'Powered by AI • Real-time Market Analysis • Built by Dora Stancu'
+                            'Built by Dora Stancu | Market Intelligence Tool Prototype'
                         ),
-                        React.createElement('p', { className: "text-gray-400 text-xs" }, 
-                            'Cross-industry intelligence across Tech, SaaS, Media, FinTech, and more'
+                        React.createElement('p', { className: "text-gray-400 text-xs mb-3" }, 
+                            'Demonstration using sample market data • Production version would integrate live market intelligence APIs'
                         ),
                         React.createElement('a', { 
-                            href: "https://github.com/dorast/job-market-intelligence",
+                            href: "https://www.linkedin.com/in/dorastancu",
                             target: "_blank",
-                            className: "text-indigo-600 hover:text-indigo-700 text-xs mt-2 inline-block"
-                        }, '🔗 View on GitHub')
+                            className: "text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                        }, '🔗 Connect on LinkedIn')
                     )
                 )
             );
